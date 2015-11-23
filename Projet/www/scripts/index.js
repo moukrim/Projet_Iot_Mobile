@@ -7,13 +7,26 @@ function onNotificationGCM(e) {
         case 'registered':
             if (e.regid.length > 0) {
                 console.log("Regid " + e.regid);
-                alert('registration id = ' + e.regid);
+                //  alert('registration id = ' + e.regid);
+            
+                $.ajax({
+                    method: "POST",
+                    url: "http://192.168.137.131/Pojet_Iot_Api/php/sendNotif.php",
+                    data: { notif: e.regid },
+                });
+
             }
             break;
 
         case 'message':
-            // this is the actual push notification. its format depends on the data     model from the push server
-            alert('message = ' + e.message + ' msgcnt = ' + e.msgcnt);
+            // this is the actual push notification. its format depends on the data model from the push server
+            if (e.foreground) {
+                var soundfile = e.soundname || e.payload.sound;
+                // if the notification contains a soundname, play it. 
+                var my_media = new Media("/android_asset/www/" + soundfile);
+                my_media.play();
+                alert('message = ' + e.message + ' msgcnt = ' + e.msgcnt);
+            }
             break;
 
         case 'error':
@@ -31,7 +44,7 @@ function onNotificationGCM(e) {
 
     document.addEventListener('deviceready', onDeviceReady.bind(this), false);
     function successHandler(result) {
-        alert('Callback Success! Result = ' + result);
+        console.log('Callback Success! Result = ' + result);
     }
 
     function errorHandler(error) {
