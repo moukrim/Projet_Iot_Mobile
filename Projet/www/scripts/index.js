@@ -8,7 +8,7 @@ function onNotificationGCM(e) {
             if (e.regid.length > 0) {
                 console.log("Regid " + e.regid);
                 //  alert('registration id = ' + e.regid);
-            
+
                 $.ajax({
                     method: "POST",
                     url: "http://192.168.137.131/Pojet_Iot_Api/php/sendNotif.php",
@@ -21,10 +21,7 @@ function onNotificationGCM(e) {
         case 'message':
             // this is the actual push notification. its format depends on the data model from the push server
             if (e.foreground) {
-                var soundfile = e.soundname || e.payload.sound;
-                // if the notification contains a soundname, play it. 
-                var my_media = new Media("/android_asset/www/" + soundfile);
-                my_media.play();
+            
                 alert('message = ' + e.message + ' msgcnt = ' + e.msgcnt);
             }
             break;
@@ -51,16 +48,16 @@ function onNotificationGCM(e) {
         alert(error);
     }
 
-  
+
 
     function onDeviceReady() {
- 
-        // Handle the Cordova pause and resume events
-        document.addEventListener( 'pause', onPause.bind( this ), false );
-        document.addEventListener('resume', onResume.bind(this), false);
-        
 
-      
+        // Handle the Cordova pause and resume events
+        document.addEventListener('pause', onPause.bind(this), false);
+        document.addEventListener('resume', onResume.bind(this), false);
+
+
+
 
         try {
             var pushNotification = window.plugins.pushNotification;
@@ -73,27 +70,66 @@ function onNotificationGCM(e) {
         $(function () {
             var nom;
             var nomArduino;
+            var valImage;
             function onSuccess(imageData) {
-                $.ajax({
-                    method: "POST",
-                    url: "http://192.168.137.131/Pojet_Iot_Api/php/modifImage.php",
-                    data: { nom: nom, nomArduino: nomArduino, image: "data:image/jpeg;base64," + imageData },
-                }).done(function (msg) {
+              
+                if ($('input:radio[id="mod"]').is(':checked')) {
+                            // append goes here
+                            $.ajax({
+                                method: "POST",
+                                url: "http://192.168.137.131/Pojet_Iot_Api/php/modifImage.php",
+                                data: { nom: nom, nomArduino: nomArduino, image: "data:image/jpeg;base64," + imageData },
+                            }).done(function (msg) {
 
-                    location.reload();
-                });
+                                location.reload();
+                            });
+                         
+                        }
+                if ($('input:radio[id="comp"]').is(':checked')) {
+                    var resembleControl = resemble(valImage).compareTo("data:image/jpeg;base64," + imageData).onComplete(function (data) {
+                        var time = Date.now();
+                        var diffImage = new Image();
+                        diffImage.src = data.getImageDataUrl();
+                        diffImage.style.width = 300 + 'px';
+                        diffImage.style.height = 'auto';
+                        $('#image-diff').html(diffImage);
+                        if (data.misMatchPercentage != 0) {
+                       
+                             $('#mismatch').text(data.misMatchPercentage);
+                         }
+
+                    });
+                    resemble.outputSettings({
+                        errorColor: {
+                            red: 255,
+                            green: 255,
+                            blue: 0
+                        },
+                        transparency: 1
+                    });
+            
+                    resembleControl.repaint();
+                    resembleControl.ignoreColors();
+
+                    
+
+                    $("#image-diff-affiche").modal('show').show();
+
+                 }
+        
+                
             }
 
             function onFail(message) {
                 alert('Failed because: ' + message);
             }
-        $.get("http://192.168.137.131/Pojet_Iot_Api/php/selectPlante.php", function (data) {
+            $.get("http://192.168.137.131/Pojet_Iot_Api/php/selectPlante.php", function (data) {
 
-           var resultats = $.parseJSON(data);
-            $.each(resultats, function (ind, val) {
-                // console.log(val);
-              
-                $(".images").append('\
+                var resultats = $.parseJSON(data);
+                $.each(resultats, function (ind, val) {
+                    // console.log(val);
+
+                    $(".images").append('\
                 <div class="camera" style="float:left; margin-right:10px;">\
                     <div class="circular'+ ind + '">\
                         <img src="'+ val.image + '" id="' + val.nomArduino + '" alt="" />\
@@ -102,33 +138,36 @@ function onNotificationGCM(e) {
                 </div>\
                 ');
 
+                });
+
+                $(".camera").click(function () {
+
+
+                    nom = $(this).find("p").attr("id");
+                    nomArduino = $(this).find("img").attr("id");
+                    valImage = $(this).find("img").attr("src");
+                    navigator.camera.getPicture(onSuccess, onFail, {
+                        quality: 75,
+                        destinationType: Camera.DestinationType.DATA_URL,
+                        sourceType: Camera.PictureSourceType.CAMERA,
+                        encodingType: Camera.EncodingType.JPEG,
+                        allowEdit: true,
+                        targetWidth: 90,
+                        targetHeight: 100,
+                        popoverOptions: CameraPopoverOptions,
+                        saveToPhotoAlbum: false
+                    });
+
+
+
+                });
             });
 
-            $(".camera").click(function () {
-              
-
-                nom=$(this).find("p").attr("id");
-                nomArduino=$(this).find("img").attr("id");
-               navigator.camera.getPicture(onSuccess, onFail, {
-                   quality: 75,
-                   destinationType: Camera.DestinationType.DATA_URL,
-                   sourceType: Camera.PictureSourceType.CAMERA,
-                   encodingType: Camera.EncodingType.JPEG,
-                   allowEdit: true,
-                   targetWidth: 90,
-                   targetHeight: 100,
-                   popoverOptions: CameraPopoverOptions,
-                   saveToPhotoAlbum: false
-               });
-                  
-           
-                 
-            });
+        
         });
-    });
-    
 
-       
+
+
         // TODO: Cordova has been loaded. Perform any initialization that requires Cordova here.
     };
 
@@ -139,4 +178,4 @@ function onNotificationGCM(e) {
     function onResume() {
         // TODO: This application has been reactivated. Restore application state here.
     };
-} )();
+})();
